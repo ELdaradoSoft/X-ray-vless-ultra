@@ -3,11 +3,12 @@ set -e
 
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${GREEN}Установка Xray VLESS Reality...${NC}"
 
-# Установка Xray (если не установлен)
+# Установка Xray если отсутствует
 if ! command -v xray >/dev/null 2>&1; then
     bash <(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)
 fi
@@ -18,14 +19,19 @@ apt install -y curl openssl qrencode >/dev/null 2>&1
 UUID=$(cat /proc/sys/kernel/random/uuid)
 IP=$(curl -s https://api.ipify.org)
 
-# Генерация REALITY ключей (новый формат Xray 26+)
+# Генерация ключей REALITY
 KEYS=$(xray x25519)
 PRIVATE=$(echo "$KEYS" | awk '/PrivateKey/ {print $2}')
 PUBLIC=$(echo "$KEYS" | awk '/Password/ {print $2}')
 
+if [ -z "$PRIVATE" ] || [ -z "$PUBLIC" ]; then
+    echo -e "${RED}Ошибка генерации ключей!${NC}"
+    exit 1
+fi
+
 SHORTID=$(openssl rand -hex 8)
 
-# Автовыбор SNI
+# Список SNI
 SNI_LIST=("www.cloudflare.com" "www.microsoft.com" "www.amazon.com" "www.google.com" "www.github.com")
 SNI=${SNI_LIST[$RANDOM % ${#SNI_LIST[@]}]}
 
@@ -48,7 +54,7 @@ cat > /usr/local/etc/xray/config.json <<EOF
       "network": "tcp",
       "security": "reality",
       "realitySettings": {
-        "dest": "$SNI:443",
+        "dest": "www.cloudflare.com:443",
         "serverNames": ["$SNI"],
         "privateKey": "$PRIVATE",
         "shortIds": ["$SHORTID"]
@@ -70,12 +76,11 @@ echo ""
 echo -e "${GREEN}=========== ГОТОВО ===========${NC}"
 echo ""
 
-# 🔥 ЯРКО-ЖЁЛТЫЙ ВЫВОД ССЫЛКИ
+# 🔥 ЯРКО-ЖЁЛТАЯ ССЫЛКА
 echo -e "${YELLOW}${LINK}${NC}"
 echo ""
 echo ""
 
-# Отступ перед QR
 qrencode -t ANSIUTF8 "$LINK"
 
 echo ""
