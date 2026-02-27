@@ -7,8 +7,9 @@ if lsof -i:443 >/dev/null 2>&1; then kill -9 $(lsof -t -i:443) 2>/dev/null || tr
 UUID=$(cat /proc/sys/kernel/random/uuid); \
 IP=$(curl -4 -s https://api.ipify.org); \
 KEYS=$(xray x25519); \
-PRIVATE=$(echo "$KEYS" | awk '/PrivateKey/ {print $2}'); \
-PUBLIC=$(echo "$KEYS" | awk '/Password/ {print $2}'); \
+PRIVATE=$(echo "$KEYS" | grep -i private | awk '{print $2}'); \
+PUBLIC=$(echo "$KEYS" | grep -Ei 'public|password' | awk '{print $2}'); \
+if [ -z "$PRIVATE" ] || [ -z "$PUBLIC" ]; then echo "Ошибка генерации REALITY ключей"; exit 1; fi; \
 SHORTID=$(openssl rand -hex 8); \
 SNI_LIST=("www.cloudflare.com" "www.microsoft.com" "www.amazon.com" "www.google.com" "www.github.com"); \
 SNI=${SNI_LIST[$RANDOM % ${#SNI_LIST[@]}]}; \
