@@ -1,0 +1,6 @@
+# 🚀 Xray VLESS Reality Ultra Installer
+
+## 📦 Быстрая установка
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ELdaradoSoft/X-ray-vless-ultra/main/Vless-super.sh -o Vless-super.sh && chmod +x Vless-super.sh && sudo ./Vless-super.sh
