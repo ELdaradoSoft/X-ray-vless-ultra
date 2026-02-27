@@ -1,5 +1,9 @@
 # 🚀 Xray VLESS Reality Ultra Installer
-# 🚀 Xray VLESS Reality Ultra Installer
+## 🚀 Быстрая установка (1 команда)
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/ELdaradoSoft/X-ray-vless-ultra/main/Vless-super.sh)
+```
 
 ![Version](https://img.shields.io/badge/version-1.0-blue)
 ![OS](https://img.shields.io/badge/Ubuntu-22%2B-orange)
@@ -30,15 +34,7 @@
 
 - Ubuntu 22+
 - Ubuntu 24+
-- Debian 11+
-
----
-
-## 🚀 Быстрая установка (1 команда)
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/ELdaradoSoft/X-ray-vless-ultra/main/Vless-super.sh)
-```
+- Debian 
 
 ---
 
