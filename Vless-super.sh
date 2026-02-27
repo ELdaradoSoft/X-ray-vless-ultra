@@ -13,7 +13,7 @@ NC='\033[0m'
 
 echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BOLD}${CYAN}║       УСТАНОВКА XRAY VLESS REALITY (ULTRA EDITION)        ║${NC}"
-echo -e "${BOLD}${CYAN}║              с поддержкой TCP + QUIC                      ║${NC}"
+echo -e "${BOLD}${CYAN}║                     (только TCP)                          ║${NC}"
 echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -54,7 +54,6 @@ release_port() {
         fi
         echo -e "${RED}  ⚠ Пробуем принудительно освободить порт $port...${NC}"
         fuser -k $port/tcp 2>/dev/null || true
-        fuser -k $port/udp 2>/dev/null || true
         sleep 2
         if lsof -i:$port >/dev/null 2>&1; then
             echo -e "${RED}${BOLD}❌ Не удалось освободить порт $port. Прерывание.${NC}"
@@ -67,10 +66,9 @@ release_port() {
     fi
 }
 
-# Проверка портов 443 и 8443
-echo -e "${YELLOW}${BOLD}🔍 Проверка портов 443 и 8443...${NC}"
+# Проверка порта 443
+echo -e "${YELLOW}${BOLD}🔍 Проверка порта 443...${NC}"
 release_port 443
-release_port 8443
 
 # Генерация параметров
 echo -e "${YELLOW}${BOLD}🔑 Генерация ключей и параметров...${NC}"
@@ -93,56 +91,33 @@ echo -e "${GREEN}  ✓ Ключи REALity созданы${NC}"
 echo -e "${GREEN}  ✓ ShortID: ${SHORTID}${NC}"
 echo -e "${GREEN}  ✓ Выбран SNI: ${SNI}${NC}"
 
-# Создание конфигурации (TCP + QUIC)
+# Создание конфигурации (только TCP)
 echo -e "${YELLOW}${BOLD}⚙ Создание конфигурационного файла...${NC}"
 mkdir -p /usr/local/etc/xray
 cat > /usr/local/etc/xray/config.json <<EOF
 {
   "log": { "loglevel": "warning" },
-  "inbounds": [
-    {
-      "port": 443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [{
-          "id": "$UUID",
-          "flow": "xtls-rprx-vision"
-        }],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "dest": "$SNI:443",
-          "serverNames": ["$SNI"],
-          "privateKey": "$PRIVATE",
-          "shortIds": ["$SHORTID"]
-        }
-      }
+  "inbounds": [{
+    "port": 443,
+    "protocol": "vless",
+    "settings": {
+      "clients": [{
+        "id": "$UUID",
+        "flow": "xtls-rprx-vision"
+      }],
+      "decryption": "none"
     },
-    {
-      "port": 8443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [{
-          "id": "$UUID",
-          "flow": "xtls-rprx-vision"
-        }],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "quic",
-        "security": "reality",
-        "realitySettings": {
-          "dest": "$SNI:443",
-          "serverNames": ["$SNI"],
-          "privateKey": "$PRIVATE",
-          "shortIds": ["$SHORTID"]
-        }
+    "streamSettings": {
+      "network": "tcp",
+      "security": "reality",
+      "realitySettings": {
+        "dest": "$SNI:443",
+        "serverNames": ["$SNI"],
+        "privateKey": "$PRIVATE",
+        "shortIds": ["$SHORTID"]
       }
     }
-  ],
+  }],
   "outbounds": [{
     "protocol": "freedom"
   }]
@@ -154,11 +129,10 @@ echo -e "${GREEN}  ✓ Конфигурация сохранена${NC}"
 echo -e "${YELLOW}${BOLD}🔎 Проверка конфигурации...${NC}"
 /usr/local/bin/xray validate -config /usr/local/etc/xray/config.json > /dev/null 2>&1 && echo -e "${GREEN}  ✓ Конфиг валиден${NC}"
 
-# Открытие портов в UFW (если активен)
+# Открытие порта в UFW (если активен)
 if command -v ufw &> /dev/null; then
     echo -e "${YELLOW}${BOLD}🔥 Настройка UFW...${NC}"
     ufw allow 443/tcp > /dev/null 2>&1 && echo -e "${GREEN}  ✓ Порт 443 (TCP) открыт${NC}"
-    ufw allow 8443/udp > /dev/null 2>&1 && echo -e "${GREEN}  ✓ Порт 8443 (UDP) открыт${NC}"
     ufw reload > /dev/null 2>&1
 fi
 
@@ -174,9 +148,8 @@ else
     exit 1
 fi
 
-# Формирование ссылок
-TCP_LINK="vless://${UUID}@${IP}:443?encryption=none&security=reality&sni=${SNI}&fp=chrome&pbk=${PUBLIC}&sid=${SHORTID}&type=tcp&flow=xtls-rprx-vision#VLESS-TCP"
-QUIC_LINK="vless://${UUID}@${IP}:8443?encryption=none&security=reality&sni=${SNI}&fp=chrome&pbk=${PUBLIC}&sid=${SHORTID}&type=quic&flow=xtls-rprx-vision#VLESS-QUIC"
+# Формирование ссылки
+LINK="vless://${UUID}@${IP}:443?encryption=none&security=reality&sni=${SNI}&fp=chrome&pbk=${PUBLIC}&sid=${SHORTID}&type=tcp&flow=xtls-rprx-vision#VLESS-REALITY"
 
 # Вывод результатов
 echo ""
@@ -184,38 +157,22 @@ echo -e "${BOLD}${CYAN}═══════════════════
 echo -e "${BOLD}${GREEN}                     УСТАНОВКА ЗАВЕРШЕНА                      ${NC}"
 echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "${BOLD}${YELLOW}📌 Параметры подключения (общие для всех):${NC}"
+echo -e "${BOLD}${YELLOW}📌 Параметры подключения:${NC}"
 echo -e "  ${BOLD}UUID:${NC}      ${UUID}"
 echo -e "  ${BOLD}PublicKey:${NC} ${PUBLIC}"
 echo -e "  ${BOLD}ShortID:${NC}   ${SHORTID}"
 echo -e "  ${BOLD}SNI:${NC}       ${SNI}"
 echo ""
-echo -e "${BOLD}${CYAN}───────────────────────────────────────────────────────────────${NC}"
-echo ""
-
-echo -e "${BOLD}${YELLOW}🔗 Ссылка VLESS + TCP (порт 443):${NC}"
-echo -e "${MAGENTA}${TCP_LINK}${NC}"
+echo -e "${BOLD}${YELLOW}🔗 Ссылка VLESS:${NC}"
+echo -e "${MAGENTA}${LINK}${NC}"
 echo ""
 if command -v qrencode &> /dev/null; then
-    echo -e "${BOLD}${YELLOW}📱 QR-код для TCP:${NC}"
-    qrencode -t ANSIUTF8 "$TCP_LINK"
+    echo -e "${BOLD}${YELLOW}📱 QR-код для подключения:${NC}"
+    qrencode -t ANSIUTF8 "$LINK"
     echo ""
 else
-    echo -e "${YELLOW}⚠ qrencode не установлен, QR-код для TCP не сгенерирован.${NC}"
+    echo -e "${YELLOW}⚠ qrencode не установлен, QR-код не сгенерирован.${NC}"
 fi
-
-echo -e "${BOLD}${CYAN}───────────────────────────────────────────────────────────────${NC}"
-echo ""
-
-echo -e "${BOLD}${YELLOW}🔗 Ссылка VLESS + QUIC (порт 8443, для мобильных приложений):${NC}"
-echo -e "${MAGENTA}${QUIC_LINK}${NC}"
-echo ""
-if command -v qrencode &> /dev/null; then
-    echo -e "${BOLD}${YELLOW}📱 QR-код для QUIC:${NC}"
-    qrencode -t ANSIUTF8 "$QUIC_LINK"
-    echo ""
-fi
-
 echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo -e "${BOLD}${GREEN}                      ГОТОВО К РАБОТЕ!                         ${NC}"
 echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════${NC}"
